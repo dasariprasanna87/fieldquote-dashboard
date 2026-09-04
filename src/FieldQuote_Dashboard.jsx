@@ -1,5 +1,13 @@
 import { useState } from "react";
 import {
+  BrowserRouter,
+  Routes,
+  Route,
+  useNavigate,
+  useParams,
+} from "react-router-dom";
+import { LeadsProvider, useLeads } from "./context/LeadsContext.jsx";
+import {
   Trash2,
   MapPin,
   Clock,
@@ -34,52 +42,6 @@ const COLORS = {
 };
 
 const SERVICE_ICON = { Pest: Bug, Lawn: Leaf, HVAC: Wrench };
-
-const INITIAL_LEADS = [
-  {
-    id: "WF-2201",
-    name: "Marisol Trent",
-    address: "482 Birchwood Ln",
-    time: "9:00 AM",
-    service: "Pest",
-    status: "Scheduled",
-  },
-  {
-    id: "WF-2202",
-    name: "Dan Okafor",
-    address: "17 Ridgecrest Dr",
-    time: "10:30 AM",
-    service: "Lawn",
-    status: "Proposal",
-    proposalItems: [
-      { id: "seed-2a", description: "Lawn treatment, 1/4 acre", price: 165 },
-    ],
-    proposalTotal: 165,
-  },
-  {
-    id: "WF-2203",
-    name: "Priya Iyer",
-    address: "930 Elm Court",
-    time: "12:15 PM",
-    service: "HVAC",
-    status: "Sold",
-    proposalItems: [
-      { id: "seed-3a", description: "System inspection", price: 90 },
-      { id: "seed-3b", description: "Filter replacement", price: 50 },
-    ],
-    proposalTotal: 140,
-    paymentMethod: "Credit Card",
-    signatureName: "Priya Iyer",
-  },
-  {
-    id: "WF-2204",
-    name: "Wes Aldridge",
-    address: "56 Foxhollow Rd",
-    time: "TBD",
-    service: "Pest",
-    status: "New",
-  },
-];
 
 const STATUS_STYLE = {
   New: { bg: COLORS.paper, fg: COLORS.fade, border: COLORS.fade },
@@ -588,7 +550,7 @@ function NewQuoteForm({ onBack, onSave }) {
             borderRadius: 8,
           }}
         >
-          <CheckCircle2 size={17} /> Save Quote
+          <CheckCircle2 size={17} /> Save Lead
         </button>
       </div>
     </div>
@@ -1119,7 +1081,7 @@ function LeadDetailForm({ lead, onBack, onSave, onViewBilling }) {
         className="text-2xl font-bold mb-5"
         style={{ color: COLORS.ink, fontFamily: "'Space Grotesk', sans-serif" }}
       >
-        New Lead
+        Edit Lead Details
       </h2>
 
       <div className="flex flex-col gap-4">
@@ -1434,206 +1396,18 @@ function LeadDetailForm({ lead, onBack, onSave, onViewBilling }) {
             borderRadius: 8,
           }}
         >
-          <CheckCircle2 size={17} /> Save Quote
+          <CheckCircle2 size={17} /> Edit Lead
         </button>
       </div>
     </div>
   );
 }
 
-export default function FieldQuoteDashboard() {
-  const [leads, setLeads] = useState(INITIAL_LEADS);
-  const [view, setView] = useState("dashboard");
-  const [selectedLead, setSelectedLead] = useState(null);
-  const [query, setQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState("All");
-  const [serviceFilter, setServiceFilter] = useState("All");
-  const [sortBy, setSortBy] = useState("time");
 
-  const visibleLeads = leads
-    .filter((lead) => {
-      const q = query.trim().toLowerCase();
-      const matchesQuery =
-        !q ||
-        lead.name.toLowerCase().includes(q) ||
-        lead.address.toLowerCase().includes(q);
-      const matchesStatus =
-        statusFilter === "All" || lead.status === statusFilter;
-      const matchesService =
-        serviceFilter === "All" || lead.service === serviceFilter;
-      return matchesQuery && matchesStatus && matchesService;
-    })
-    .sort((a, b) => {
-      if (sortBy === "name") return a.name.localeCompare(b.name);
-      if (sortBy === "price-desc")
-        return (
-          (Number(b.proposalTotal || b.price) || 0) -
-          (Number(a.proposalTotal || a.price) || 0)
-        );
-      if (sortBy === "price-asc")
-        return (
-          (Number(a.proposalTotal || a.price) || 0) -
-          (Number(b.proposalTotal || b.price) || 0)
-        );
-      return 0; // "time" keeps original route order
-    });
-
-  const stats = {
-    appointments: leads.filter((l) => l.status === "Scheduled").length,
-    proposals: leads.filter((l) => l.status === "Proposal").length,
-    sold: leads.filter((l) => l.status === "Sold").length,
-  };
-  const handleSave = (form) => {
-    const id = "WF-" + (2200 + leads.length + 1);
-    setLeads([
-      ...leads,
-      {
-        id,
-        name: form.name,
-        address: form.address || "—",
-        time: "TBD",
-        service: form.service,
-        status: "New",
-        price: form.price || 0,
-        phone: form.phone || "—",
-        email: form.email || "—",
-      },
-    ]);
-    setView("dashboard");
-  };
-  const handleUpdateLead = (id, updatedFields, navigateTo = "dashboard") => {
-    let merged = null;
-    setLeads(
-      leads.map((lead) => {
-        if (lead.id !== id) return lead;
-        merged = { ...lead, ...updatedFields };
-        return merged;
-      }),
-    );
-    if (merged) setSelectedLead(merged);
-    setView(navigateTo);
-  };
-
-  const handleViewBilling = (id) => {
-    const lead = leads.find((l) => l.id === id);
-    if (lead) setSelectedLead(lead);
-    setView("billing");
-  };
-
-  const handleDelete = (id) => {
-    setLeads(leads.filter((lead) => lead.id !== id));
-  };
-  const handleStatusChange = (id, newStatus) => {
-    setLeads(
-      leads.map((lead) =>
-        lead.id === id ? { ...lead, status: newStatus } : lead,
-      ),
-    );
-  };
-  let content;
-
-  if (view === "dashboard") {
-    content = (
-      <>
-        <h1
-          className="text-2xl font-bold mb-1"
-          style={{
-            color: COLORS.ink,
-            fontFamily: "'Space Grotesk', sans-serif",
-          }}
-        >
-          Good morning, Alex.
-        </h1>
-        <p className="text-sm mb-5" style={{ color: COLORS.fade }}>
-          Here's your route for today.
-        </p>
-
-        <div className="flex gap-3 mb-7">
-          <StatCard label="Appointments" value={stats.appointments} />
-          <StatCard label="Proposals Out" value={stats.proposals} />
-          <StatCard label="Sold Today" value={stats.sold} />
-        </div>
-
-        <div className="flex items-center justify-between mb-3">
-          <h2
-            className="text-sm font-bold uppercase tracking-wide"
-            style={{ color: COLORS.moss }}
-          >
-            Today's Route
-          </h2>
-          <button
-            onClick={() => setView("new-quote")}
-            className="flex items-center gap-1 px-4 py-2 text-xs font-bold uppercase tracking-wide"
-            style={{
-              backgroundColor: COLORS.gold,
-              color: COLORS.forest,
-              borderRadius: 6,
-            }}
-          >
-            <Plus size={15} /> New Lead
-          </button>
-        </div>
-
-        <RouteToolbar
-          query={query}
-          onQueryChange={setQuery}
-          statusFilter={statusFilter}
-          onStatusFilterChange={setStatusFilter}
-          serviceFilter={serviceFilter}
-          onServiceFilterChange={setServiceFilter}
-          sortBy={sortBy}
-          onSortByChange={setSortBy}
-          resultCount={visibleLeads.length}
-        />
-
-        <div className="flex flex-col gap-3">
-          {visibleLeads.length === 0 ? (
-            <div
-              className="text-center py-10 text-sm"
-              style={{ color: COLORS.fade }}
-            >
-              No stops match your filters.
-            </div>
-          ) : (
-            visibleLeads.map((lead) => (
-              <TicketCard
-                key={lead.id}
-                lead={lead}
-                onDelete={handleDelete}
-                onStatusChange={handleStatusChange}
-                onClick={() => {
-                  setSelectedLead(lead);
-                  setView("lead-details");
-                }}
-              />
-            ))
-          )}
-        </div>
-      </>
-    );
-  } else if (view === "new-quote") {
-    content = (
-      <NewQuoteForm onBack={() => setView("dashboard")} onSave={handleSave} />
-    );
-  } else if (view === "lead-details") {
-    content = (
-      <LeadDetailForm
-        lead={selectedLead}
-        onBack={() => setView("dashboard")}
-        onSave={handleUpdateLead}
-        onViewBilling={handleViewBilling}
-      />
-    );
-  } else if (view === "billing") {
-    content = (
-      <BillingScreen
-        lead={selectedLead}
-        onBack={() => setView("lead-details")}
-        onComplete={handleUpdateLead}
-      />
-    );
-  }
-
+// ---------------------------------------------------------------------------
+// App shell — the persistent top bar / background, independent of routing.
+// ---------------------------------------------------------------------------
+function AppShell({ children }) {
   return (
     <div
       style={{
@@ -1671,7 +1445,290 @@ export default function FieldQuoteDashboard() {
         </div>
       </div>
 
-      {content}
+      <div className="px-6 py-6">{children}</div>
     </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Route: "/" — dashboard / today's route list.
+// Reads shared lead state from context — no independent fetch here anymore.
+// ---------------------------------------------------------------------------
+function DashboardPage() {
+  const navigate = useNavigate();
+  const { leads, loading, error, deleteLead, changeStatus } = useLeads();
+  const [query, setQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState("All");
+  const [serviceFilter, setServiceFilter] = useState("All");
+  const [sortBy, setSortBy] = useState("time");
+  const [actionError, setActionError] = useState(null);
+
+  const visibleLeads = leads
+    .filter((lead) => {
+      const q = query.trim().toLowerCase();
+      const matchesQuery =
+        !q ||
+        lead.name.toLowerCase().includes(q) ||
+        lead.address.toLowerCase().includes(q);
+      const matchesStatus =
+        statusFilter === "All" || lead.status === statusFilter;
+      const matchesService =
+        serviceFilter === "All" || lead.service === serviceFilter;
+      return matchesQuery && matchesStatus && matchesService;
+    })
+    .sort((a, b) => {
+      if (sortBy === "name") return a.name.localeCompare(b.name);
+      if (sortBy === "price-desc")
+        return (
+          (Number(b.proposalTotal || b.price) || 0) -
+          (Number(a.proposalTotal || a.price) || 0)
+        );
+      if (sortBy === "price-asc")
+        return (
+          (Number(a.proposalTotal || a.price) || 0) -
+          (Number(b.proposalTotal || b.price) || 0)
+        );
+      return 0; // "time" keeps original route order
+    });
+
+  const stats = {
+    appointments: leads.filter((l) => l.status === "Scheduled").length,
+    proposals: leads.filter((l) => l.status === "Proposal").length,
+    sold: leads.filter((l) => l.status === "Sold").length,
+  };
+
+  const handleDelete = async (id) => {
+    setActionError(null);
+    try {
+      await deleteLead(id);
+    } catch (err) {
+      setActionError(err.message || "Failed to delete lead");
+    }
+  };
+
+  const handleStatusChange = async (id, newStatus) => {
+    setActionError(null);
+    try {
+      await changeStatus(id, newStatus);
+    } catch (err) {
+      setActionError(err.message || "Failed to update status");
+    }
+  };
+
+  if (loading) {
+    return <p style={{ color: COLORS.fade }}>Loading route…</p>;
+  }
+
+  return (
+    <>
+      <h1
+        className="text-2xl font-bold mb-1"
+        style={{
+          color: COLORS.ink,
+          fontFamily: "'Space Grotesk', sans-serif",
+        }}
+      >
+        Good morning, Alex.
+      </h1>
+      <p className="text-sm mb-5" style={{ color: COLORS.fade }}>
+        Here's your route for today.
+      </p>
+
+      {(error || actionError) && (
+        <p className="text-sm mb-4" style={{ color: "#B3261E" }}>
+          {error || actionError}
+        </p>
+      )}
+
+      <div className="flex gap-3 mb-7">
+        <StatCard label="Appointments" value={stats.appointments} />
+        <StatCard label="Proposals Out" value={stats.proposals} />
+        <StatCard label="Sold Today" value={stats.sold} />
+      </div>
+
+      <div className="flex items-center justify-between mb-3">
+        <h2
+          className="text-sm font-bold uppercase tracking-wide"
+          style={{ color: COLORS.moss }}
+        >
+          Today's Route
+        </h2>
+        <button
+          onClick={() => navigate("/new-quote")}
+          className="flex items-center gap-1 px-4 py-2 text-xs font-bold uppercase tracking-wide"
+          style={{
+            backgroundColor: COLORS.gold,
+            color: COLORS.forest,
+            borderRadius: 6,
+          }}
+        >
+          <Plus size={15} /> New Lead
+        </button>
+      </div>
+
+      <RouteToolbar
+        query={query}
+        onQueryChange={setQuery}
+        statusFilter={statusFilter}
+        onStatusFilterChange={setStatusFilter}
+        serviceFilter={serviceFilter}
+        onServiceFilterChange={setServiceFilter}
+        sortBy={sortBy}
+        onSortByChange={setSortBy}
+        resultCount={visibleLeads.length}
+      />
+
+      <div className="flex flex-col gap-3">
+        {visibleLeads.length === 0 ? (
+          <div
+            className="text-center py-10 text-sm"
+            style={{ color: COLORS.fade }}
+          >
+            No stops match your filters.
+          </div>
+        ) : (
+          visibleLeads.map((lead) => (
+            <TicketCard
+              key={lead.id}
+              lead={lead}
+              onDelete={handleDelete}
+              onStatusChange={handleStatusChange}
+              onClick={() => navigate(`/leads/${lead.id}`)}
+            />
+          ))
+        )}
+      </div>
+    </>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Route: "/new-quote"
+// ---------------------------------------------------------------------------
+function NewQuotePage() {
+  const navigate = useNavigate();
+  const { addLead } = useLeads();
+  const [error, setError] = useState(null);
+
+  const handleSave = async (form) => {
+    setError(null);
+    try {
+      await addLead(form); // POST /leads, via context
+      navigate("/");
+    } catch (err) {
+      setError(err.message || "Failed to save lead");
+    }
+  };
+
+  return (
+    <>
+      {error && (
+        <p className="text-sm mb-4 max-w-xl mx-auto" style={{ color: "#B3261E" }}>
+          {error}
+        </p>
+      )}
+      <NewQuoteForm onBack={() => navigate("/")} onSave={handleSave} />
+    </>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Route: "/leads/:id"
+// Reads the lead straight out of shared context state — no separate fetch.
+// ---------------------------------------------------------------------------
+function LeadDetailPage() {
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const { loading, getLeadById, updateLead } = useLeads();
+  const [error, setError] = useState(null);
+
+  const lead = getLeadById(id);
+
+  const handleSave = async (leadId, updatedFields, navigateTo = "dashboard") => {
+    setError(null);
+    try {
+      await updateLead(leadId, updatedFields); // PUT /leads/:id, via context
+      if (navigateTo === "billing") navigate(`/leads/${leadId}/billing`);
+      else navigate("/");
+    } catch (err) {
+      setError(err.message || "Failed to update lead");
+    }
+  };
+
+  const handleViewBilling = (leadId) => navigate(`/leads/${leadId}/billing`);
+
+  if (loading) return <p style={{ color: COLORS.fade }}>Loading lead…</p>;
+  if (!lead)
+    return (
+      <p className="max-w-xl mx-auto" style={{ color: "#B3261E" }}>
+        {error || `Lead ${id} not found`}
+      </p>
+    );
+
+  return (
+    <LeadDetailForm
+      lead={lead}
+      onBack={() => navigate("/")}
+      onSave={handleSave}
+      onViewBilling={handleViewBilling}
+    />
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Route: "/leads/:id/billing"
+// ---------------------------------------------------------------------------
+function BillingPage() {
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const { loading, getLeadById, updateLead } = useLeads();
+  const [error, setError] = useState(null);
+
+  const lead = getLeadById(id);
+
+  const handleComplete = async (leadId, updatedFields) => {
+    setError(null);
+    try {
+      await updateLead(leadId, updatedFields); // PUT /leads/:id, via context
+      navigate(`/leads/${leadId}`);
+    } catch (err) {
+      setError(err.message || "Failed to complete sale");
+    }
+  };
+
+  if (loading) return <p style={{ color: COLORS.fade }}>Loading billing…</p>;
+  if (!lead)
+    return (
+      <p className="max-w-xl mx-auto" style={{ color: "#B3261E" }}>
+        {error || `Lead ${id} not found`}
+      </p>
+    );
+
+  return (
+    <BillingScreen
+      lead={lead}
+      onBack={() => navigate(`/leads/${id}`)}
+      onComplete={handleComplete}
+    />
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Root component — Router for navigation, LeadsProvider for shared state.
+// ---------------------------------------------------------------------------
+export default function FieldQuoteDashboard() {
+  return (
+    <BrowserRouter basename={import.meta.env.BASE_URL}>
+      <LeadsProvider>
+        <AppShell>
+          <Routes>
+            <Route path="/" element={<DashboardPage />} />
+            <Route path="/new-quote" element={<NewQuotePage />} />
+            <Route path="/leads/:id" element={<LeadDetailPage />} />
+            <Route path="/leads/:id/billing" element={<BillingPage />} />
+          </Routes>
+        </AppShell>
+      </LeadsProvider>
+    </BrowserRouter>
   );
 }

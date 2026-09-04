@@ -20,6 +20,7 @@ import {
   CreditCard,
   Banknote,
   PenLine,
+  AlertCircle,
 } from "lucide-react";
 
 const COLORS = {
@@ -434,6 +435,13 @@ function NewQuoteForm({ onBack, onSave }) {
 
   const update = (key) => (e) => setForm({ ...form, [key]: e.target.value });
 
+  const isFormValid =
+    form.name.trim() &&
+    form.address.trim() &&
+    form.phone.trim() &&
+    form.email.trim() &&
+    String(form.price).trim();
+
   return (
     <div className="max-w-xl mx-auto">
       <button
@@ -580,16 +588,25 @@ function NewQuoteForm({ onBack, onSave }) {
         </div>
 
         <button
-          onClick={() => form.name && onSave(form)}
+          onClick={() => isFormValid && onSave(form)}
+          disabled={!isFormValid}
           className="mt-2 flex items-center justify-center gap-2 py-3 font-bold text-sm uppercase tracking-wide"
           style={{
-            backgroundColor: COLORS.gold,
-            color: COLORS.forest,
+            backgroundColor: isFormValid ? COLORS.gold : COLORS.line,
+            color: isFormValid ? COLORS.forest : COLORS.fade,
             borderRadius: 8,
           }}
         >
           <CheckCircle2 size={17} /> Save Quote
         </button>
+        {!isFormValid && (
+          <p
+            className="flex items-center gap-1.5 text-xs -mt-2"
+            style={{ color: COLORS.fade }}
+          >
+            <AlertCircle size={13} /> Fill in all fields to save this lead.
+          </p>
+        )}
       </div>
     </div>
   );
@@ -1067,12 +1084,20 @@ function LeadDetailForm({ lead, onBack, onSave, onViewBilling }) {
   );
 
   const hasProposal = lead.proposalItems && lead.proposalItems.length > 0;
+  const isSold = form.status === "Sold";
   const [showProposal, setShowProposal] = useState(false);
   const [proposalItems, setProposalItems] = useState(
     hasProposal ? lead.proposalItems : [makeProposalItem()],
   );
 
   const update = (key) => (e) => setForm({ ...form, [key]: e.target.value });
+
+  const isFormValid =
+    form.name.trim() &&
+    form.address.trim() &&
+    form.phone.trim() &&
+    form.email.trim() &&
+    String(form.price).trim();
 
   const confirmAppointment = () => {
     if (!appointmentDate || !appointmentTime) return;
@@ -1308,13 +1333,14 @@ function LeadDetailForm({ lead, onBack, onSave, onViewBilling }) {
           <input
             value={form.name}
             onChange={update("name")}
+            disabled={isSold}
             placeholder="e.g. Jordan Reyes"
             className="w-full mt-1 px-3 py-2 text-sm outline-none"
             style={{
               border: `1px solid ${COLORS.line}`,
               borderRadius: 6,
-              backgroundColor: COLORS.paper,
-              color: COLORS.ink,
+              backgroundColor: isSold ? COLORS.sand : COLORS.paper,
+              color: isSold ? COLORS.fade : COLORS.ink,
             }}
           />
         </div>
@@ -1328,13 +1354,14 @@ function LeadDetailForm({ lead, onBack, onSave, onViewBilling }) {
           <input
             value={form.phone}
             onChange={update("phone")}
+            disabled={isSold}
             placeholder="e.g. (555) 123-4567"
             className="w-full mt-1 px-3 py-2 text-sm outline-none"
             style={{
               border: `1px solid ${COLORS.line}`,
               borderRadius: 6,
-              backgroundColor: COLORS.paper,
-              color: COLORS.ink,
+              backgroundColor: isSold ? COLORS.sand : COLORS.paper,
+              color: isSold ? COLORS.fade : COLORS.ink,
             }}
           />
         </div>
@@ -1348,13 +1375,14 @@ function LeadDetailForm({ lead, onBack, onSave, onViewBilling }) {
           <input
             value={form.email}
             onChange={update("email")}
+            disabled={isSold}
             placeholder="e.g. jordan.reyes@example.com"
             className="w-full mt-1 px-3 py-2 text-sm outline-none"
             style={{
               border: `1px solid ${COLORS.line}`,
               borderRadius: 6,
-              backgroundColor: COLORS.paper,
-              color: COLORS.ink,
+              backgroundColor: isSold ? COLORS.sand : COLORS.paper,
+              color: isSold ? COLORS.fade : COLORS.ink,
             }}
           />
         </div>
@@ -1369,13 +1397,14 @@ function LeadDetailForm({ lead, onBack, onSave, onViewBilling }) {
           <input
             value={form.address}
             onChange={update("address")}
+            disabled={isSold}
             placeholder="e.g. 12 Maple St"
             className="w-full mt-1 px-3 py-2 text-sm outline-none"
             style={{
               border: `1px solid ${COLORS.line}`,
               borderRadius: 6,
-              backgroundColor: COLORS.paper,
-              color: COLORS.ink,
+              backgroundColor: isSold ? COLORS.sand : COLORS.paper,
+              color: isSold ? COLORS.fade : COLORS.ink,
             }}
           />
         </div>
@@ -1390,12 +1419,13 @@ function LeadDetailForm({ lead, onBack, onSave, onViewBilling }) {
           <select
             value={form.service}
             onChange={update("service")}
+            disabled={isSold}
             className="w-full mt-1 px-3 py-2 text-sm outline-none"
             style={{
               border: `1px solid ${COLORS.line}`,
               borderRadius: 6,
-              backgroundColor: COLORS.paper,
-              color: COLORS.ink,
+              backgroundColor: isSold ? COLORS.sand : COLORS.paper,
+              color: isSold ? COLORS.fade : COLORS.ink,
             }}
           >
             <option>Pest</option>
@@ -1414,28 +1444,42 @@ function LeadDetailForm({ lead, onBack, onSave, onViewBilling }) {
           <input
             value={form.price}
             onChange={update("price")}
+            disabled={isSold}
             placeholder="e.g. 240"
             className="w-full mt-1 px-3 py-2 text-sm outline-none"
             style={{
               border: `1px solid ${COLORS.line}`,
               borderRadius: 6,
-              backgroundColor: COLORS.paper,
-              color: COLORS.ink,
+              backgroundColor: isSold ? COLORS.sand : COLORS.paper,
+              color: isSold ? COLORS.fade : COLORS.ink,
             }}
           />
         </div>
 
-        <button
-          onClick={() => form.name && onSave(lead.id, form)}
-          className="mt-2 flex items-center justify-center gap-2 py-3 font-bold text-sm uppercase tracking-wide"
-          style={{
-            backgroundColor: COLORS.gold,
-            color: COLORS.forest,
-            borderRadius: 8,
-          }}
-        >
-          <CheckCircle2 size={17} /> Save Quote
-        </button>
+        {!isSold && (
+          <>
+            <button
+              onClick={() => isFormValid && onSave(lead.id, form)}
+              disabled={!isFormValid}
+              className="mt-2 flex items-center justify-center gap-2 py-3 font-bold text-sm uppercase tracking-wide"
+              style={{
+                backgroundColor: isFormValid ? COLORS.gold : COLORS.line,
+                color: isFormValid ? COLORS.forest : COLORS.fade,
+                borderRadius: 8,
+              }}
+            >
+              <CheckCircle2 size={17} /> Save Quote
+            </button>
+            {!isFormValid && (
+              <p
+                className="flex items-center gap-1.5 text-xs -mt-2"
+                style={{ color: COLORS.fade }}
+              >
+                <AlertCircle size={13} /> Fill in all fields to save this lead.
+              </p>
+            )}
+          </>
+        )}
       </div>
     </div>
   );
